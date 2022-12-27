@@ -1,0 +1,56 @@
+FROM php:8.2-fpm-alpine3.17
+
+LABEL maintainer="Kazem Mirzaei <k90mirzaei@gmail.com>"
+
+ENV USER=www
+ENV GROUP=www
+
+USER root
+
+# Install system dependencies
+RUN set -ex \
+    && apk add --update --no-cache --virtual .build-deps \
+        libmemcached-dev \
+        libtool \
+        libxml2-dev \
+        oniguruma-dev \
+        zlib-dev \
+        ffmpeg \
+        zip \
+        unzip \
+        curl \
+        git \
+    \
+    && docker-php-ext-install \
+        bcmath \
+        pdo \
+        pdo_mysql \
+        mbstring \
+        exif \
+        pcntl \
+        xml \
+    \
+    # Clean up
+    && apk del .build-deps \
+    && rm -fr /tmp/pear
+
+# Get latest Composer
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+
+# Setup working directory
+WORKDIR /var/www/
+
+# create user
+RUN addgroup -g 1000 $GROUP && \
+    adduser --shell /sbin/nologin --disabled-password \
+    --no-create-home --uid 1000 --ingroup $GROUP $USER
+
+## Grant Permissions
+RUN chown -R ${USER} /var/www
+
+### Select User
+USER ${USER}
+
+# Copy permission to selected user
+COPY --chown=${USER}:${GROUP} . .
+
