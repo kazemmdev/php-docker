@@ -30,6 +30,13 @@ RUN set -ex \
         pcntl \
         xml \
     \
+    # gd
+    && docker-php-ext-configure gd --with-jpeg --with-freetype \
+	&& docker-php-ext-install gd \
+    \
+    # Install ffmpeg
+    && apk add --update --no-cache ffmpeg \
+    \
     # Clean up
     && apk del .build-deps \
     && rm -fr /tmp/pear
