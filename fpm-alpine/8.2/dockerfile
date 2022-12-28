@@ -15,7 +15,6 @@ RUN set -ex \
         libxml2-dev \
         oniguruma-dev \
         zlib-dev \
-        ffmpeg \
         zip \
         unzip \
         curl \
@@ -31,6 +30,11 @@ RUN set -ex \
         xml \
     \
     # gd
+    && apk add --update --no-cache \
+        libjpeg-turbo-dev \
+        libpng-dev \
+        libwebp-dev \
+        freetype-dev \
     && docker-php-ext-configure gd --with-jpeg --with-freetype \
 	&& docker-php-ext-install gd \
     \
@@ -48,9 +52,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 WORKDIR /var/www/
 
 # create user
-RUN addgroup -g 1000 $GROUP && \
-    adduser --shell /sbin/nologin --disabled-password \
-    --no-create-home --uid 1000 --ingroup $GROUP $USER
+RUN getent group ${GROUP} || addgroup -g 1000 ${GROUP} 
+RUN id -u ${USER} || adduser --shell /sbin/nologin --disabled-password --no-create-home --uid 1000 --ingroup ${GROUP} ${USER}
 
 ## Grant Permissions
 RUN chown -R ${USER} /var/www
