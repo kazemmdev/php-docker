@@ -41,6 +41,13 @@ RUN set -ex \
     # Install ffmpeg
     && apk add --update --no-cache ffmpeg \
     \
+    # Install redis
+    && apk --no-cache add pcre-dev ${PHPIZE_DEPS} \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del pcre-dev ${PHPIZE_DEPS} \
+    && docker-php-ext-enable redis \        
+    \
     # Clean up
     && apk del .build-deps \
     && rm -fr /tmp/pear
@@ -61,6 +68,13 @@ RUN chown -R ${USER} /var/www
 ### Select User
 USER ${USER}
 
-# Copy permission to selected user
+# Grant permission to selected user
 COPY --chown=${USER}:${GROUP} . .
 
+# Execute scripts
+COPY --chown=${USER}:${GROUP} entrypoint.sh /tmp/entrypoint.sh 
+RUN ["chmod", "+x", "/tmp/entrypoint.sh"]
+ENTRYPOINT [ "/tmp/entrypoint.sh" ]
+
+# Keep php live
+CMD [ "php-fpm" ]
