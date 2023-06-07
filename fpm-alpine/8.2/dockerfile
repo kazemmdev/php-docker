@@ -1,4 +1,4 @@
-FROM php:8.2-fpm-alpine3.17
+FROM php:8.2-fpm-alpine3.18
 
 LABEL maintainer="Kazem Mirzaei <k90mirzaei@gmail.com>"
 
@@ -10,15 +10,17 @@ USER root
 # Install system dependencies
 RUN set -ex \
     && apk add --update --no-cache --virtual .build-deps \
+        autoconf \
+        curl \
+        g++ \
         libmemcached-dev \
         libtool \
+        libzip-dev \
         libxml2-dev \
+        make \
         oniguruma-dev \
-        zlib-dev \
-        zip \
         unzip \
-        curl \
-        git \
+        zip \
     \
     && docker-php-ext-install \
         bcmath \
@@ -29,7 +31,7 @@ RUN set -ex \
         pcntl \
         xml \
     \
-    # gd
+    # Install gd
     && apk add --update --no-cache \
         libjpeg-turbo-dev \
         libpng-dev \
@@ -44,13 +46,18 @@ RUN set -ex \
     # Install redis
     && apk --no-cache add pcre-dev ${PHPIZE_DEPS} \
     && pecl install redis \
-    && docker-php-ext-enable redis \
     && apk del pcre-dev ${PHPIZE_DEPS} \
     && docker-php-ext-enable redis \        
     \
+    # Install zip 
+    && docker-php-ext-configure zip \
+    && docker-php-ext-install zip \
+    \
     # Clean up
     && apk del .build-deps \
-    && rm -fr /tmp/pear
+    && rm -fr /tmp/pear \ 
+    && rm -rf /tmp/* \
+    && rm -rf /var/cache/apk/*
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
