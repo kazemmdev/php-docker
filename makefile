@@ -1,50 +1,27 @@
-# Image URL to use for all building/pushing image targets
+# Image URL to use all building/pushing image targets
 REGISTRY ?= k90mirzaei/php
 
-# List of supported PHP versions
-PHP_VERSIONS := 8.1 8.2
+all: build push
 
-# Dockerfile directory
-DOCKERFILE_DIR ?= .
+build: ## Build all images
+	- @echo "Building..."
+	- docker build ./fpm-alpine/8.1 -t $(REGISTRY):8.1-fpm-alpine3.18 
+	- docker build ./fpm-alpine/8.2 -t $(REGISTRY):8.2-fpm-alpine3.18
 
-# Default build arguments
-BUILD_ARGS ?=
+push: ## Push all images to github repo
+	- @echo "Pushing..."
+	- docker push $(REGISTRY):8.1-fpm-alpine3.18 
+	- docker push $(REGISTRY):8.2-fpm-alpine3.18
 
-# Default push arguments
-PUSH_ARGS ?=
 
-# Build all images
-build: $(foreach version,$(PHP_VERSIONS),build-$(version))
-
-# Build a specific image
-build-%:
-	@echo "Building PHP $*..."
-	docker build $(DOCKERFILE_DIR)/fpm-alpine/$* -t $(REGISTRY):$*-fpm-alpine3.18 $(BUILD_ARGS)
-
-# Push all images
-push: $(foreach version,$(PHP_VERSIONS),push-$(version))
-
-# Push a specific image
-push-%:
-	@echo "Pushing PHP $*..."
-	docker push $(REGISTRY):$*-fpm-alpine3.18 $(PUSH_ARGS)
-
-# Show makefile helper
-help:
-	@echo "Makefile available commands:"
-	@echo ""
-	@awk '/^[^\.%]/ { \
-		helpMessage = match(lastLine, /^## (.*)/); \
-		if (helpMessage) { \
-			command = substr($$1, 1, index($$1, ":")-1); \
-			printf "  \033[36m%-20s\033[0m %s\n", command, substr(lastLine, RSTART + 3, RLENGTH) \
-		} \
-	} \
-	{ lastLine = $$0 }' $(MAKEFILE_LIST)
-	@echo ""
-	@echo "Passing arguments:"
-	@echo "make build BUILD_ARGS=\"--no-cache\""
-	@echo "make push PUSH_ARGS=\"--quiet\""
+help: ## Show makefile helper
+	- @printf '\e[1;33m%-6s\e[m' "Makefile available commands"
+	- @echo ''
+	- @grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	- @echo -e '\n'
+	- @printf '\e[1;33m%-6s\e[m' "Passing arguments"
+	- @echo -e '\nmake image-dev ARGS="--no-cache"'
+	- @echo -e '\nenvironment: \n $(ENV)'
 
 .DEFAULT_GOAL := help
-.PHONY: help build push $(foreach version,$(PHP_VERSIONS),build-$(version)) $(foreach version,$(PHP_VERSIONS),push-$(version))
+.PHONY: help
