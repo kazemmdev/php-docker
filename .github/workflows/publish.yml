@@ -15,4 +15,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_IMAGE_TOKEN }}
       - name: Build all Docker images an push them
-        run: make
+        run: |
+          make build
+          make push
