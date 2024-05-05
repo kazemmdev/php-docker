@@ -1,17 +1,18 @@
 # Image URL to use all building/pushing image targets
 REGISTRY ?= k90mirzaei/php
+VERSION  ?= 8.2.18-fpm-alpine3.19
 
 all: build push
 
 build: ## Build all images
 	- @echo "Building..."
-	- docker build ./fpm-alpine/8.1 -t $(REGISTRY):8.1-fpm-alpine3.18 
-	- docker build ./fpm-alpine/8.2 -t $(REGISTRY):8.2-fpm-alpine3.18
+	- docker build ./fpm-alpine/8.1 -t $(REGISTRY):$(VERSION)
+	- docker build ./fpm-alpine/8.2 -t $(REGISTRY):$(VERSION)
 
 push: ## Push all images to github repo
 	- @echo "Pushing..."
-	- docker push $(REGISTRY):8.1-fpm-alpine3.18 
-	- docker push $(REGISTRY):8.2-fpm-alpine3.18
+	- docker push $(REGISTRY):$(VERSION)
+	- docker push $(REGISTRY):$(VERSION)
 
 
 help: ## Show makefile helper
