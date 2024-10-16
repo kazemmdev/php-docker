@@ -1,18 +1,24 @@
 # Image URL to use all building/pushing image targets
 REGISTRY ?= k90mirzaei/php
-VERSION  ?= 8.2.18-fpm-alpine3.19
+VERSION  ?= latest
 
 all: build push
 
 build: ## Build all images
 	- @echo "Building..."
-	- docker build ./fpm-alpine/8.1 -t $(REGISTRY):$(VERSION)
-	- docker build ./fpm-alpine/8.2 -t $(REGISTRY):$(VERSION)
+	- @for dir in $(shell find ./fpm-alpine -mindepth 1 -maxdepth 1 -type d); do \
+		version=$$(basename $$dir); \
+		echo "Building image for version $$version..."; \
+		docker build $$dir -t $(REGISTRY):$$version-$(VERSION); \
+	done
 
 push: ## Push all images to github repo
 	- @echo "Pushing..."
-	- docker push $(REGISTRY):$(VERSION)
-	- docker push $(REGISTRY):$(VERSION)
+	- @for dir in $(shell find ./fpm-alpine -mindepth 1 -maxdepth 1 -type d); do \
+		version=$$(basename $$dir); \
+		echo "Pushing image for version $$version..."; \
+		docker push $(REGISTRY):$$version-$(VERSION); \
+	done
 
 
 help: ## Show makefile helper
