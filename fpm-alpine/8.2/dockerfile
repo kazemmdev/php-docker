@@ -11,7 +11,6 @@ ENV GROUP www
 # Switch to root user to perform system updates and installations
 USER root
 
-
 #############################################
 ### Install and enable PHP extensions
 #############################################

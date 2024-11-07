@@ -1,104 +1,78 @@
-FROM php:8.3.13-alpine3.20
+FROM php:8.3.9-alpine3.20
 
-# Set the maintainer label
 LABEL Maintainer="Kazem Mirzaei <k90mirzaei@gmail.com>"
 LABEL Description="PHP-FPM v8.3 with essential extensions and FFmpeg with libfdk-aac support on Alpine Linux."
 
-# Set environment variables for the user and group
 ENV USER www
 ENV GROUP www
 
-# Switch to root user to perform system updates and installations
 USER root
 
-#############################################
-### Install system dependencies and PHP extensions
-#############################################
-
+# Install runtime and build dependencies
 RUN set -ex \
-    # Install system dependencies
-    && apk add --update --no-cache \
-        freetype \
-        gettext \
-        gmp \
-        icu-libs \
-        imagemagick \
-        imap \
-        libintl \
-        libjpeg-turbo \
-        libpng \
-        libpq \
-        libtool \
-        libxpm \
-        libxslt \
-        libzip \
-        mysql-client \
-        tzdata \
-    \
-    # Development dependencies
-    && apk add --update --no-cache --virtual .build-deps \
+    && apk update && apk upgrade \
+    && apk add --no-cache \
         autoconf \
         curl-dev \
+        freetype \
         freetype-dev \
         g++ \
         gcc \
+        gettext \
         gettext-dev \
         git \
+        gmp \
         gmp-dev \
+        icu-libs \
         icu-dev \
+        imagemagick \
         imagemagick-dev \
+        imap \
         imap-dev \
         krb5-dev \
         libc-dev \
+        libintl \
+        libjpeg-turbo \
         libjpeg-turbo-dev \
+        libpng \
         libpng-dev \
         libwebp-dev \
         libxml2-dev \
+        libxpm \
         libxpm-dev \
+        libxslt \
         libxslt-dev \
+        libzip \
         libzip-dev \
+        make \
+        mysql-client \
         pcre-dev \
         pkgconf \
-        zlib-dev \
-        nasm \
-        yasm \
-        tar \
-        build-base \
-        fdk-aac-dev \
-        lame-dev \
-        libass-dev \
-        libvpx-dev \
-        libvorbis-dev \
-        libogg-dev \
-        libtheora-dev \
-        opus-dev \
-    \
-    ################################
-    # Install PHP extensions
-    ################################
-    \
-    # Install gd
-    && ln -s /usr/lib/$(apk --print-arch)-linux-gnu/libXpm.* /usr/lib/ \
+        tzdata \
+        zlib-dev
+
+# Install PHP extensions
+RUN ln -s /usr/lib/$(apk --print-arch)-linux-gnu/libXpm.* /usr/lib/ \
     && docker-php-ext-configure gd --with-webp --with-jpeg --with-xpm --with-freetype --enable-gd-jis-conv \
-    && docker-php-ext-install -j$(nproc) gd \
-    \
-    # Install gettext, gmp, bcmath, exif, intl, imap, pdo_mysql, pcntl, zip, redis, imagick
-    && docker-php-ext-install -j$(nproc) gettext gmp bcmath exif intl pdo pdo_mysql pcntl zip \
-    && docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
-    && docker-php-ext-install -j$(nproc) imap \
-    && pecl install imagick redis \
-    && docker-php-ext-enable imagick redis \
-    \
-    # Clean up build packages
-    && docker-php-source delete \
-    && rm -fr /tmp/pear \
-    && rm -rf /var/cache/apk/* \
-    \
-    #############################################
-    ### Install and compile FFmpeg with libfdk-aac
-    #############################################
-    \
-    && mkdir -p /usr/src/ffmpeg \
+    && docker-php-ext-install -j$(nproc) gd
+
+RUN docker-php-ext-install -j$(nproc) gettext gmp bcmath exif intl pdo pdo_mysql pcntl zip
+
+RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
+    && docker-php-ext-install -j$(nproc) imap
+
+# Install required libraries for imagick
+RUN apk add --no-cache imagemagick imagemagick-dev
+
+# Install imagick and redis extensions separately
+RUN pecl install imagick \
+    && docker-php-ext-enable imagick
+
+RUN pecl install redis \
+    && docker-php-ext-enable redis
+
+# Compile and install FFmpeg with libfdk-aac support
+RUN mkdir -p /usr/src/ffmpeg \
     && cd /usr/src/ffmpeg \
     && wget https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 \
     && tar xjf ffmpeg-snapshot.tar.bz2 \
@@ -118,8 +92,7 @@ RUN set -ex \
     && make -j$(nproc) \
     && make install \
     && cd / \
-    && rm -rf /usr/src/ffmpeg \
-    && apk del .build-deps
+    && rm -rf /usr/src/ffmpeg
 
 # Install Composer
 RUN wget https://raw.githubusercontent.com/composer/getcomposer.org/76a7060ccb93902cd7576b67264ad91c8a2700e2/web/installer -O - -q | php -- --quiet \
