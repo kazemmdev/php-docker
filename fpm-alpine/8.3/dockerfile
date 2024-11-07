@@ -1,8 +1,8 @@
-FROM php:8.3.9-alpine3.20
+FROM php:8.3.13-alpine3.20
 
 # Set the maintainer label
 LABEL Maintainer="Kazem Mirzaei <k90mirzaei@gmail.com>"
-LABEL Description="PHP-FPM v8.2 with essential extensions on top of Alpine Linux."
+LABEL Description="PHP-FPM v8.3 with essential extensions and FFmpeg with libfdk-aac support on Alpine Linux."
 
 # Set environment variables for the user and group
 ENV USER www
@@ -11,17 +11,14 @@ ENV GROUP www
 # Switch to root user to perform system updates and installations
 USER root
 
-
 #############################################
-### Install and enable PHP extensions
+### Install system dependencies and PHP extensions
 #############################################
 
-# Install system dependencies
 RUN set -ex \
+    # Install system dependencies
     && apk add --update --no-cache \
-        c-client \
         freetype \
-        ffmpeg \
         gettext \
         gmp \
         icu-libs \
@@ -35,13 +32,11 @@ RUN set -ex \
         libxpm \
         libxslt \
         libzip \
-        make \
         mysql-client \
-        tzdata
-
-# Development dependencies
-RUN set -ex \
-    && apk add --update --no-cache \
+        tzdata \
+    \
+    # Development dependencies
+    && apk add --update --no-cache --virtual .build-deps \
         autoconf \
         curl-dev \
         freetype-dev \
@@ -65,6 +60,18 @@ RUN set -ex \
         pcre-dev \
         pkgconf \
         zlib-dev \
+        nasm \
+        yasm \
+        tar \
+        build-base \
+        fdk-aac-dev \
+        lame-dev \
+        libass-dev \
+        libvpx-dev \
+        libvorbis-dev \
+        libogg-dev \
+        libtheora-dev \
+        opus-dev \
     \
     ################################
     # Install PHP extensions
@@ -72,80 +79,57 @@ RUN set -ex \
     \
     # Install gd
     && ln -s /usr/lib/$(apk --print-arch)-linux-gnu/libXpm.* /usr/lib/ \
-    && docker-php-ext-configure gd \
-        --enable-gd \
-        --with-webp \
-        --with-jpeg \
-        --with-xpm \
-        --with-freetype \
-        --enable-gd-jis-conv \
+    && docker-php-ext-configure gd --with-webp --with-jpeg --with-xpm --with-freetype --enable-gd-jis-conv \
     && docker-php-ext-install -j$(nproc) gd \
-    && true \
     \
-    # Install gettext
-    && docker-php-ext-install -j$(nproc) gettext \
-    && true \
-    \
-    # Install gmp
-    && docker-php-ext-install -j$(nproc) gmp \
-    && true \
-    \
-    # Install bcmath
-    && docker-php-ext-install -j$(nproc) bcmath \
-    && true \
-    \
-    # Install exif
-    && docker-php-ext-install -j$(nproc) exif \
-    && true \
-    \
-    # Install imap
-    && docker-php-ext-configure imap --with-kerberos --with-imap-ssl --with-imap \
+    # Install gettext, gmp, bcmath, exif, intl, imap, pdo_mysql, pcntl, zip, redis, imagick
+    && docker-php-ext-install -j$(nproc) gettext gmp bcmath exif intl pdo pdo_mysql pcntl zip \
+    && docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
     && docker-php-ext-install -j$(nproc) imap \
-    && true \
-    \
-    # Install imagick
-    && pecl install imagick \
-    && docker-php-ext-enable imagick \
-    && true \
-    \
-    # Install intl
-    && docker-php-ext-install -j$(nproc) intl \
-    && true \
-    \
-    # Install pdo_mysql
-    && docker-php-ext-configure pdo_mysql --with-zlib-dir=/usr \
-    && docker-php-ext-install -j$(nproc) pdo pdo_mysql \
-    && true \
-    \
-    # Install pcntl
-    && docker-php-ext-install -j$(nproc) pcntl \
-    && true \
-    \
-    # Install redis
-    && pecl install --force redis \
-    && docker-php-ext-enable redis \
-    && true \
-    \
-    # Install zip
-    && docker-php-ext-configure zip --with-zip \
-    && docker-php-ext-install -j$(nproc) zip \
-    && true \
+    && pecl install imagick redis \
+    && docker-php-ext-enable imagick redis \
     \
     # Clean up build packages
     && docker-php-source delete \
-    && rm -fr /tmp/pear \ 
+    && rm -fr /tmp/pear \
     && rm -rf /var/cache/apk/* \
-    && true
+    \
+    #############################################
+    ### Install and compile FFmpeg with libfdk-aac
+    #############################################
+    \
+    && mkdir -p /usr/src/ffmpeg \
+    && cd /usr/src/ffmpeg \
+    && wget https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 \
+    && tar xjf ffmpeg-snapshot.tar.bz2 \
+    && cd ffmpeg \
+    && ./configure --prefix=/usr \
+        --enable-gpl \
+        --enable-nonfree \
+        --enable-libfdk-aac \
+        --enable-libmp3lame \
+        --enable-libass \
+        --enable-libvpx \
+        --enable-libx264 \
+        --enable-libwebp \
+        --enable-libvorbis \
+        --enable-libtheora \
+        --enable-opus \
+    && make -j$(nproc) \
+    && make install \
+    && cd / \
+    && rm -rf /usr/src/ffmpeg \
+    && apk del .build-deps
 
 # Install Composer
 RUN wget https://raw.githubusercontent.com/composer/getcomposer.org/76a7060ccb93902cd7576b67264ad91c8a2700e2/web/installer -O - -q | php -- --quiet \
     && mv composer.phar /usr/local/bin/composer \
     && addgroup -S composer \
     && adduser -S composer -G composer \
-    && composer --version \
-    && true
+    && composer --version
 
+# Expose PHP-FPM port
+EXPOSE 9000
 
 # Start PHP-FPM
-EXPOSE 9000
 CMD ["php-fpm"]
