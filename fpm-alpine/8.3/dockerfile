@@ -64,7 +64,7 @@ RUN pecl install imagick-3.6.0 && \
 # Compile and install FFmpeg with libfdk-aac support
 RUN git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git /ffmpeg && \
     cd /ffmpeg && \
-    ./configure --prefix=/usr/local --enable-gpl --enable-nonfree --enable-libfdk-aac && \
+    ./configure --prefix=/usr/local --enable-gpl --enable-nonfree --enable-libfdk-aac --enable-libx264 && \
     make -j$(nproc) && \
     make install && \
     make clean && \
