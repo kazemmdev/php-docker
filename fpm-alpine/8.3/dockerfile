@@ -1,17 +1,15 @@
 FROM php:8.3.9-alpine3.20
 
-LABEL Maintainer="Kazem Mirzaei <k90mirzaei@gmail.com>"
-LABEL Description="PHP-FPM v8.3 with essential extensions and FFmpeg with libfdk-aac support on Alpine Linux."
+LABEL maintainer="Kazem Mirzaei <k90mirzaei@gmail.com>" \
+      description="PHP-FPM v8.3 with essential extensions and FFmpeg with libfdk-aac support on Alpine Linux."
 
-ENV USER www
-ENV GROUP www
+ENV USER=www \
+    GROUP=www
 
 USER root
 
 # Install runtime and build dependencies
-RUN set -ex \
-    && apk update && apk upgrade \
-    && apk add --no-cache \
+RUN apk update && apk upgrade && apk add --no-cache \
         autoconf \
         automake \
         build-base \
@@ -45,7 +43,6 @@ RUN set -ex \
         libpng \
         libpng-dev \
         libpq \
-        libtool \
         libwebp-dev \
         libxml2-dev \
         libxpm \
@@ -62,36 +59,32 @@ RUN set -ex \
         tzdata \
         zlib-dev
 
-# Install PHP extensions
-RUN ln -s /usr/lib/$(apk --print-arch)-linux-gnu/libXpm.* /usr/lib/ \
-    && docker-php-ext-configure gd --with-webp --with-jpeg --with-xpm --with-freetype --enable-gd-jis-conv \
-    && docker-php-ext-install -j$(nproc) gd
+# Configure and install PHP extensions
+RUN ln -s /usr/lib/$(apk --print-arch)-linux-gnu/libXpm.* /usr/lib/ && \
+    docker-php-ext-configure gd --with-webp --with-jpeg --with-xpm --with-freetype --enable-gd-jis-conv && \
+    docker-php-ext-install -j$(nproc) gd gettext gmp bcmath exif intl pdo pdo_mysql pcntl zip
 
-RUN docker-php-ext-install -j$(nproc) gettext gmp bcmath exif intl pdo pdo_mysql pcntl zip
+RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl && \
+    docker-php-ext-install -j$(nproc) imap
 
-RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl && docker-php-ext-install -j$(nproc) imap
-
-RUN pecl install imagick-3.6.0 && docker-php-ext-enable imagick
+RUN pecl install imagick-3.6.0 && \
+    docker-php-ext-enable imagick
 
 # Compile and install FFmpeg with libfdk-aac support
 RUN git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git /ffmpeg && \
     cd /ffmpeg && \
-    ./configure \
-        --prefix=/usr/local \
-        --enable-gpl \
-        --enable-nonfree \
-        --enable-libfdk-aac && \
+    ./configure --prefix=/usr/local --enable-gpl --enable-nonfree --enable-libfdk-aac && \
     make -j$(nproc) && \
     make install && \
     make clean && \
     rm -rf /ffmpeg
 
 # Install Composer
-RUN wget https://raw.githubusercontent.com/composer/getcomposer.org/76a7060ccb93902cd7576b67264ad91c8a2700e2/web/installer -O - -q | php -- --quiet \
-    && mv composer.phar /usr/local/bin/composer \
-    && addgroup -S composer \
-    && adduser -S composer -G composer \
-    && composer --version
+RUN wget -q -O - https://raw.githubusercontent.com/composer/getcomposer.org/76a7060ccb93902cd7576b67264ad91c8a2700e2/web/installer | php -- --quiet && \
+    mv composer.phar /usr/local/bin/composer && \
+    addgroup -S composer && \
+    adduser -S composer -G composer && \
+    composer --version
 
 # Expose PHP-FPM port
 EXPOSE 9000
