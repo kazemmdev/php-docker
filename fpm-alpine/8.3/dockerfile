@@ -1,7 +1,7 @@
 FROM php:8.3.9-alpine3.20
 
 LABEL maintainer="Kazem Mirzaei <k90mirzaei@gmail.com>" \
-      description="PHP-FPM v8.3 with essential extensions and FFmpeg with libfdk-aac support on Alpine Linux."
+      description="PHP-FPM v8.3 with essential extensions on Alpine Linux."
 
 ENV USER=www \
     GROUP=www
@@ -10,45 +10,11 @@ USER root
 
 # Install runtime and build dependencies
 RUN apk update && apk upgrade && apk add --no-cache \
-        curl-dev \
-        fdk-aac-dev \
-        freetype \
-        freetype-dev \
-        gettext \
-        gettext-dev \
-        git \
-        libtool \
-        gmp \
-        gmp-dev \
-        icu-dev \
-        icu-libs \
-        imagemagick \
-        imagemagick-dev \
-        imap \
-        imap-dev \
-        krb5-dev \
-        libc-dev \
-        libintl \
-        libjpeg-turbo \
-        libjpeg-turbo-dev \
-        libpng \
-        libpng-dev \
-        libpq \
-        libwebp-dev \
-        libxml2-dev \
-        libxpm \
-        libxpm-dev \
-        libxslt \
-        libxslt-dev \
-        libzip \
-        libzip-dev \
-        openssl-dev \
-        make \
-        mysql-client \
-        pcre-dev \
-        pkgconf \
-        tzdata \
-        zlib-dev
+    autoconf automake build-base cmake git c-client curl-dev fdk-aac-dev \
+    freetype freetype-dev ffmpeg gettext gettext-dev gmp-dev icu-dev imap imagemagick libzip \
+    imagemagick-dev icu-libs imap-dev krb5-dev libc-dev libjpeg-turbo-dev libpng-dev libtool gmp libxslt \
+    libwebp-dev libxml2-dev libxpm-dev libxslt-dev libzip-dev libintl libjpeg-turbo libpng libpq libxpm \
+    openssl-dev make mysql-client pkgconf pcre-dev x264-dev zlib-dev tzdata
 
 # Configure and install PHP extensions
 RUN ln -s /usr/lib/$(apk --print-arch)-linux-gnu/libXpm.* /usr/lib/ && \
@@ -58,7 +24,7 @@ RUN ln -s /usr/lib/$(apk --print-arch)-linux-gnu/libXpm.* /usr/lib/ && \
 RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl && \
     docker-php-ext-install -j$(nproc) imap
 
-RUN pecl install imagick-3.6.0 && \
+RUN pecl install imagick && \
     docker-php-ext-enable imagick
 
 # Compile and install FFmpeg with libfdk-aac support
@@ -71,15 +37,8 @@ RUN git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git /ffmpeg && \
     rm -rf /ffmpeg
 
 # Remove build dependencies
-RUN apk del --no-cache \
-        autoconf \
-        automake \
-        build-base \
-        g++ \
-        gcc \
-        libtool \
-        make \
-        pkgconf
+RUN apk del --no-cache autoconf automake build-base g++ gcc libtool make pkgconf && \
+    rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
 
 # Install Composer
 RUN wget -q -O - https://raw.githubusercontent.com/composer/getcomposer.org/76a7060ccb93902cd7576b67264ad91c8a2700e2/web/installer | php -- --quiet && \
