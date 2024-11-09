@@ -13,7 +13,12 @@ RUN set -ex \
     && apk update && apk upgrade \
     && apk add --no-cache \
         autoconf \
+        automake \
+        build-base \
+        cmake \
+        c-client \
         curl-dev \
+        fdk-aac-dev \
         freetype \
         freetype-dev \
         g++ \
@@ -21,10 +26,13 @@ RUN set -ex \
         gettext \
         gettext-dev \
         git \
+        nasm \
+        yasm \
+        libtool \
         gmp \
         gmp-dev \
-        icu-libs \
         icu-dev \
+        icu-libs \
         imagemagick \
         imagemagick-dev \
         imap \
@@ -36,6 +44,8 @@ RUN set -ex \
         libjpeg-turbo-dev \
         libpng \
         libpng-dev \
+        libpq \
+        libtool \
         libwebp-dev \
         libxml2-dev \
         libxpm \
@@ -44,6 +54,7 @@ RUN set -ex \
         libxslt-dev \
         libzip \
         libzip-dev \
+        openssl-dev \
         make \
         mysql-client \
         pcre-dev \
@@ -58,41 +69,22 @@ RUN ln -s /usr/lib/$(apk --print-arch)-linux-gnu/libXpm.* /usr/lib/ \
 
 RUN docker-php-ext-install -j$(nproc) gettext gmp bcmath exif intl pdo pdo_mysql pcntl zip
 
-RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
-    && docker-php-ext-install -j$(nproc) imap
+RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl && docker-php-ext-install -j$(nproc) imap
 
-# Install required libraries for imagick
-RUN apk add --no-cache imagemagick imagemagick-dev
-
-# Install imagick and redis extensions separately
-RUN pecl install imagick \
-    && docker-php-ext-enable imagick
-
-RUN pecl install redis \
-    && docker-php-ext-enable redis
+RUN pecl install imagick-3.6.0 && docker-php-ext-enable imagick
 
 # Compile and install FFmpeg with libfdk-aac support
-RUN mkdir -p /usr/src/ffmpeg \
-    && cd /usr/src/ffmpeg \
-    && wget https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2 \
-    && tar xjf ffmpeg-snapshot.tar.bz2 \
-    && cd ffmpeg \
-    && ./configure --prefix=/usr \
+RUN git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git /ffmpeg && \
+    cd /ffmpeg && \
+    ./configure \
+        --prefix=/usr/local \
         --enable-gpl \
         --enable-nonfree \
-        --enable-libfdk-aac \
-        --enable-libmp3lame \
-        --enable-libass \
-        --enable-libvpx \
-        --enable-libx264 \
-        --enable-libwebp \
-        --enable-libvorbis \
-        --enable-libtheora \
-        --enable-opus \
-    && make -j$(nproc) \
-    && make install \
-    && cd / \
-    && rm -rf /usr/src/ffmpeg
+        --enable-libfdk-aac && \
+    make -j$(nproc) && \
+    make install && \
+    make clean && \
+    rm -rf /ffmpeg
 
 # Install Composer
 RUN wget https://raw.githubusercontent.com/composer/getcomposer.org/76a7060ccb93902cd7576b67264ad91c8a2700e2/web/installer -O - -q | php -- --quiet \
