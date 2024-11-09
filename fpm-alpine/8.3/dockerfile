@@ -14,7 +14,7 @@ RUN apk update && apk upgrade && apk add --no-cache \
     freetype freetype-dev ffmpeg gettext gettext-dev gmp-dev icu-dev imap imagemagick libzip \
     imagemagick-dev icu-libs imap-dev krb5-dev libc-dev libjpeg-turbo-dev libpng-dev libtool gmp libxslt \
     libwebp-dev libxml2-dev libxpm-dev libxslt-dev libzip-dev libintl libjpeg-turbo libpng libpq libxpm \
-    openssl-dev make mysql-client pkgconf pcre-dev x264-dev zlib-dev tzdata
+    openssl-dev make mysql-client nasm pkgconf pcre-dev x264-dev zlib-dev tzdata
 
 # Configure and install PHP extensions
 RUN ln -s /usr/lib/$(apk --print-arch)-linux-gnu/libXpm.* /usr/lib/ && \
