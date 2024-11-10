@@ -10,11 +10,55 @@ USER root
 
 # Install runtime and build dependencies
 RUN apk update && apk upgrade && apk add --no-cache \
-    autoconf automake build-base cmake git c-client curl-dev fdk-aac-dev \
-    freetype freetype-dev ffmpeg gettext gettext-dev gmp-dev icu-dev imap imagemagick libzip \
-    imagemagick-dev icu-libs imap-dev krb5-dev libc-dev libjpeg-turbo-dev libpng-dev libtool gmp libxslt \
-    libwebp-dev libxml2-dev libxpm-dev libxslt-dev libzip-dev libintl libjpeg-turbo libpng libpq libxpm \
-    openssl-dev make mysql-client nasm pkgconf pcre-dev x264-dev zlib-dev tzdata
+    autoconf \
+    automake \
+    build-base \
+    c-client \
+    cmake \
+    curl-dev \
+    fdk-aac-dev \
+    ffmpeg \
+    freetype \
+    freetype-dev \
+    g++ \
+    gcc \
+    gettext \
+    gettext-dev \
+    git \
+    gmp \
+    gmp-dev \
+    icu-dev \
+    icu-libs \
+    imap \
+    imap-dev \
+    imagemagick \
+    imagemagick-dev \
+    krb5-dev \
+    libc-dev \
+    libintl \
+    libjpeg-turbo \
+    libjpeg-turbo-dev \
+    libpng \
+    libpng-dev \
+    libpq \
+    libtool \
+    libwebp-dev \
+    libxml2-dev \
+    libxpm \
+    libxpm-dev \
+    libxslt \
+    libxslt-dev \
+    libzip \
+    libzip-dev \
+    make \
+    mysql-client \
+    nasm \
+    openssl-dev \
+    pcre-dev \
+    pkgconf \
+    tzdata \
+    x264-dev \
+    zlib-dev
 
 # Configure and install PHP extensions
 RUN ln -s /usr/lib/$(apk --print-arch)-linux-gnu/libXpm.* /usr/lib/ && \
