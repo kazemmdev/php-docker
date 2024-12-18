@@ -70,12 +70,11 @@ RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl && \
 
 RUN docker-php-ext-install ftp
 
-RUN pecl install imagick && \
-    docker-php-ext-enable imagick
+RUN pecl channel-update pecl.php.net
 
-RUN pecl install --force redis && \
-    docker-php-ext-enable redis
+RUN pecl install imagick-3.6.0 && docker-php-ext-enable imagick
 
+RUN pecl install --force redis && docker-php-ext-enable redis
 
 
 # Compile and install FFmpeg with libfdk-aac support
