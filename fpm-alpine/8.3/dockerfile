@@ -63,7 +63,7 @@ RUN apk update && apk upgrade && apk add --no-cache \
 # Configure and install PHP extensions
 RUN ln -s /usr/lib/$(apk --print-arch)-linux-gnu/libXpm.* /usr/lib/ && \
     docker-php-ext-configure gd --with-webp --with-jpeg --with-xpm --with-freetype --enable-gd-jis-conv && \
-    docker-php-ext-install -j$(nproc) gd gettext gmp bcmath exif intl pdo pdo_mysql pcntl zip ftp
+    docker-php-ext-install -j$(nproc) gd gettext gmp bcmath exif intl pdo pdo_mysql pcntl zip
 
 RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl && \
     docker-php-ext-install -j$(nproc) imap
@@ -73,6 +73,9 @@ RUN pecl install imagick && \
 
 RUN pecl install --force redis && \
     docker-php-ext-enable redis
+
+# Install FTP extension
+RUN docker-php-ext-install ftp
 
 # Compile and install FFmpeg with libfdk-aac support
 RUN git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git /ffmpeg && \
