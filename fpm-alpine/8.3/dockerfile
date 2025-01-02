@@ -6,7 +6,8 @@ LABEL maintainer="Kazem Mirzaei <k90mirzaei@gmail.com>" \
 # Use non-root user for production
 ARG USER=www
 ARG GROUP=www
-ENV USER=${USER} GROUP=${GROUP} TZ=UTC
+
+USER root
 
 # Install runtime and build dependencies
 RUN apk update && apk upgrade && apk add --no-cache \
