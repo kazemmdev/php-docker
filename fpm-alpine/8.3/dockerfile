@@ -37,7 +37,10 @@ RUN apk update && apk upgrade && apk add --no-cache \
     git \
     oniguruma-dev \
     krb5-dev \
-    libtool
+    libtool \
+    ffmpeg \
+    x264-dev \
+    fdk-aac-dev
 
 # Configure and install PHP extensions
 RUN docker-php-ext-configure gd --with-webp --with-jpeg --with-freetype && \
