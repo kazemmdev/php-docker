@@ -63,9 +63,10 @@ RUN pecl install redis && \
     docker-php-ext-enable redis
 
 # Install Composer
-RUN wget -q -O composer-setup.php https://getcomposer.org/installer && \
-    php composer-setup.php --install-dir=/usr/local/bin --filename=composer && \
-    rm composer-setup.php && \
+RUN wget -q -O - https://raw.githubusercontent.com/composer/getcomposer.org/76a7060ccb93902cd7576b67264ad91c8a2700e2/web/installer | php -- --quiet && \
+    mv composer.phar /usr/local/bin/composer && \
+    addgroup -S composer && \
+    adduser -S composer -G composer && \
     composer --version
 
 # Remove unnecessary files to reduce image size
