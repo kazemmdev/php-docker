@@ -3,106 +3,87 @@ FROM php:8.3.9-alpine3.20
 LABEL maintainer="Kazem Mirzaei <k90mirzaei@gmail.com>" \
       description="PHP-FPM v8.3 with essential extensions on Alpine Linux."
 
-ENV USER=www \
-    GROUP=www
-
-USER root
+# Use non-root user for production
+ARG USER=www
+ARG GROUP=www
+ENV USER=${USER} GROUP=${GROUP} TZ=UTC
 
 # Install runtime and build dependencies
 RUN apk update && apk upgrade && apk add --no-cache \
     autoconf \
     automake \
     build-base \
-    c-client \
-    cmake \
     curl-dev \
-    fdk-aac-dev \
-    ffmpeg \
     freetype \
     freetype-dev \
-    g++ \
-    gcc \
     gettext \
     gettext-dev \
-    git \
     gmp \
     gmp-dev \
     icu-dev \
-    icu-libs \
     imap \
     imap-dev \
     imagemagick \
     imagemagick-dev \
-    krb5-dev \
-    libc-dev \
-    libintl \
-    libjpeg-turbo \
     libjpeg-turbo-dev \
-    libpng \
     libpng-dev \
-    libpq \
-    libtool \
     libwebp-dev \
-    libxml2-dev \
-    libxpm \
-    libxpm-dev \
-    libxslt \
     libxslt-dev \
-    libzip \
     libzip-dev \
-    make \
     mysql-client \
-    nasm \
     openssl-dev \
-    pcre-dev \
-    pkgconf \
     tzdata \
-    x264-dev \
-    zlib-dev
+    zip \
+    git \
+    oniguruma-dev \
+    krb5-dev \
+    libtool
 
 # Configure and install PHP extensions
-RUN ln -s /usr/lib/$(apk --print-arch)-linux-gnu/libXpm.* /usr/lib/ && \
-    docker-php-ext-configure gd --with-webp --with-jpeg --with-xpm --with-freetype --enable-gd-jis-conv && \
-    docker-php-ext-install -j$(nproc) gd gettext gmp bcmath exif intl pdo pdo_mysql pcntl zip
+RUN docker-php-ext-configure gd --with-webp --with-jpeg --with-freetype && \
+    docker-php-ext-configure imap --with-kerberos --with-imap-ssl && \
+    docker-php-ext-install -j$(nproc) gd gettext gmp bcmath exif intl pdo_mysql pcntl zip imap
 
-RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl && \
-    docker-php-ext-install -j$(nproc) imap
-
+# Manually compile and install imagick
 RUN git clone https://github.com/Imagick/imagick.git /usr/src/imagick && \
-        cd /usr/src/imagick && \
-        phpize && \
-        ./configure && \
-        make && \
-        make install && \
-        docker-php-ext-enable imagick
-
-RUN pecl install --force redis && docker-php-ext-enable redis
-
-RUN docker-php-ext-install ftp
-
-
-# Compile and install FFmpeg with libfdk-aac support
-RUN git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git /ffmpeg && \
-    cd /ffmpeg && \
-    ./configure --prefix=/usr/local --enable-gpl --enable-nonfree --enable-libfdk-aac --enable-libx264 && \
+    cd /usr/src/imagick && \
+    phpize && \
+    ./configure && \
     make -j$(nproc) && \
     make install && \
-    make clean && \
-    rm -rf /ffmpeg
+    docker-php-ext-enable imagick && \
+    rm -rf /usr/src/imagick
 
-# Remove build dependencies
-RUN apk del --no-cache autoconf automake build-base g++ gcc libtool make pkgconf && \
-    rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
+# Install Redis extension via PECL
+RUN pecl install redis && \
+    docker-php-ext-enable redis
 
 # Install Composer
-RUN wget -q -O - https://raw.githubusercontent.com/composer/getcomposer.org/76a7060ccb93902cd7576b67264ad91c8a2700e2/web/installer | php -- --quiet && \
-    mv composer.phar /usr/local/bin/composer && \
-    addgroup -S composer && \
-    adduser -S composer -G composer && \
+RUN wget -q -O composer-setup.php https://getcomposer.org/installer && \
+    php composer-setup.php --install-dir=/usr/local/bin --filename=composer && \
+    rm composer-setup.php && \
     composer --version
+
+# Remove unnecessary files to reduce image size
+RUN apk del --no-cache \
+    autoconf \
+    automake \
+    build-base \
+    libtool && \
+    rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
+
+# Create a non-root user for security
+RUN addgroup -S ${GROUP} && adduser -S ${USER} -G ${GROUP} && \
+    mkdir -p /var/www/html && \
+    chown -R ${USER}:${GROUP} /var/www/html
+
+WORKDIR /var/www/html
 
 # Expose PHP-FPM port
 EXPOSE 9000
+
+# Switch to non-root user
+USER ${USER}
 
 # Start PHP-FPM
 CMD ["php-fpm"]
