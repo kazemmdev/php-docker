@@ -76,21 +76,8 @@ RUN apk del --no-cache \
     libtool && \
     rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
 
-# Set the working directory
-WORKDIR /var/www
-
-# Create a non-root user and group
-RUN getent group ${GROUP} || addgroup -g 1000 ${GROUP} 
-RUN id -u ${USER} || adduser --shell /sbin/nologin --disabled-password --no-create-home --uid 1000 --ingroup ${GROUP} ${USER}
-
-# Grant write permissions to the non-root user and group
-RUN chown -R ${USER}:${GROUP} /var/www
-
 # Expose PHP-FPM port
 EXPOSE 9000
-
-# Switch to non-root user
-USER ${USER}
 
 # Start PHP-FPM
 CMD ["php-fpm"]
